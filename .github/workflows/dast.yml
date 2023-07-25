@@ -18,6 +18,6 @@ jobs:
         name: Scan the application
         steps:
           - name: ZAP Scan
-            uses: zaproxy/action-full-scan@0.5.1
+            uses: zaproxy/action-full-scan@v0.5.1
             with:
               target: 'https://fernandoarias-a5e58b9f2634.herokuapp.com/'
