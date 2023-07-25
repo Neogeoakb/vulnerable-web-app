@@ -5,10 +5,19 @@ on:
     branches: [ "master" ]
 
 jobs:
-  stackhawk:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - uses: stackhawk/hawkscan-action@v2.0.3
-      with:
-        apiKey: ${{ secrets.HAWK_API_KEY }}
+    stackhawk:
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@v2
+        - uses: stackhawk/hawkscan-action@v2.0.3
+          with:
+            apiKey: ${{ secrets.HAWK_API_KEY }}
+
+    owasp:
+        runs-on: ubuntu-latest
+        name: Scan the application
+        steps:
+          - name: ZAP Scan
+            uses: zaproxy/action-full-scan@0.5.1
+            with:
+              target: 'https://fernandoarias-a5e58b9f2634.herokuapp.com/'
