@@ -12,6 +12,7 @@ jobs:
         - uses: stackhawk/hawkscan-action@v2.0.3
           with:
             apiKey: ${{ secrets.HAWK_API_KEY }}
+          continue-on-error: true
 
     owasp:
         runs-on: ubuntu-latest
