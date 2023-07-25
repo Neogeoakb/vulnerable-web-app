@@ -5,11 +5,9 @@ on:
     branches: [ "master" ]
 
 jobs:
-
-    sast:
+    vsast:
         uses: ./.github/workflows/sast.yml
-    
-    deploy:
+    vdeploy:
         uses: ./.github/workflows/deploy.yml
 
     stackhawk:
@@ -22,7 +20,7 @@ jobs:
           continue-on-error: true
 
     owasp:
-        needs: [sast, deploy]
+        needs: [vsast, vdeploy]
         runs-on: ubuntu-latest
         name: Scan the application
         steps:
