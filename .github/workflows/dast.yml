@@ -1,35 +1,35 @@
-name: Dinamic Analysis Security Testing
+# name: Dinamic Analysis Security Testing
 
-on:
-  push:
-    branches: [ "master" ]
+# on:
+#   push:
+#     branches: [ "master" ]
 
-jobs:
-    vsast:
-        uses: ./.github/workflows/sast.yml
-    vdeploy:
-        uses: ./.github/workflows/deploy.yml
+# jobs:
+#     vsast:
+#         uses: ./.github/workflows/sast.yml
+#     vdeploy:
+#         uses: ./.github/workflows/deploy.yml
 
-    stackhawk:
-        runs-on: ubuntu-latest
-        steps:
-        - uses: actions/checkout@v2
-        - uses: stackhawk/hawkscan-action@v2.0.3
-          with:
-            apiKey: ${{ secrets.HAWK_API_KEY }}
-          continue-on-error: true
+#     stackhawk:
+#         runs-on: ubuntu-latest
+#         steps:
+#         - uses: actions/checkout@v2
+#         - uses: stackhawk/hawkscan-action@v2.0.3
+#           with:
+#             apiKey: ${{ secrets.HAWK_API_KEY }}
+#           continue-on-error: true
 
-    owasp:
-        needs: [vsast, vdeploy]
-        runs-on: ubuntu-latest
-        name: Scan the application
-        steps:
-          - name: ZAP Scan
-            uses: zaproxy/action-full-scan@v0.5.1
-            with:
-              target: 'https://fernandoarias-a5e58b9f2634.herokuapp.com/'
-            continue-on-error: true
-          - uses: actions/upload-artifact@v2
-            with: 
-              name: owasp-zap
-              path: report_*
+#     owasp:
+#         needs: [vsast, vdeploy]
+#         runs-on: ubuntu-latest
+#         name: Scan the application
+#         steps:
+#           - name: ZAP Scan
+#             uses: zaproxy/action-full-scan@v0.5.1
+#             with:
+#               target: 'https://fernandoarias-a5e58b9f2634.herokuapp.com/'
+#             continue-on-error: true
+#           - uses: actions/upload-artifact@v2
+#             with: 
+#               name: owasp-zap
+#               path: report_*

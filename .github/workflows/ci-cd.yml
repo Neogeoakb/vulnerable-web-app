@@ -1,0 +1,110 @@
+name: CI/CD                                  # workflow name
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+    secrets:
+        name: Scan Secrets Horusec
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@v3
+        - name: Install Horusec
+          continue-on-error: true
+          run: |
+            curl -fsSL https://raw.githubusercontent.com/ZupIT/horusec/master/deployments/scripts/install.sh | bash -s latest
+            horusec start -p="./" -e="true" -o="json" -O="./horusec.json" 
+        - uses: actions/upload-artifact@v3
+          with:
+            name: horusec
+            path: horusec.json
+    linter:
+        name: linter dockerfile
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@v3
+        - uses: hadolint/hadolint-action@v3.1.0
+          with:
+            dockerfile: Dockerfile
+          continue-on-error: true
+    npmaudit:
+        name: npm audit
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@v3
+        - uses: actions/setup-node@v3
+          with:
+            node-version: '12'
+        - run: npm audit --registry=https://registry.npmjs.org  --json > report_npmaudit.json
+          continue-on-error: true   
+        - uses: actions/upload-artifact@v3
+          with:
+            name: npm audit
+            path: report_npmaudit.json
+    trivy:
+        name: trivy scan
+        runs-on: ubuntu-20.04
+        permissions:
+            # required for all workflows
+            security-events: write
+            actions: read
+            contents: read
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v3
+            - name: Build an image from Dockerfile
+              run: |
+                docker build -t trivy-image:${{ github.sha }} .
+            - name: Run Trivy vulnerability scanner
+              uses: aquasecurity/trivy-action@master
+              with:
+                image-ref: 'trivy-image:${{ github.sha }}'
+                format: 'sarif'
+                output: 'trivy-results.sarif'
+            - name: Upload Trivy scan results to GitHub Security tab
+              uses: github/codeql-action/upload-sarif@v2
+              with:
+                sarif_file: 'trivy-results.sarif'
+            
+            - name: Run Trivy vulnerability scanner
+              uses: aquasecurity/trivy-action@master
+              continue-on-error: true
+              with:
+                image-ref: 'trivy-image:${{ github.sha }}'
+                format: 'json'
+                output: 'trivy-results.json'
+                # severity: 'HIGH'
+                exit-code: '1'
+            - uses: actions/upload-artifact@v3
+              with:
+                name: trivy
+                path: trivy-results.json
+    deploy-heroku:
+        needs: [secrets, linter, npmaudit, trivy]
+        name: Deploy Heroku
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3
+            - uses: akhileshns/heroku-deploy@v3.12.14 # This is the action
+              with:
+                heroku_api_key: ${{secrets.HEROKU_API_KEY}}
+                heroku_app_name: ${{secrets.HEROKU_APP}} #Must be unique in Heroku
+                heroku_email: "neogeoakb@gmail.com"
+                remote_branch: "master"
+                usedocker: true
+    owasp:
+        needs: [deploy-heroku]
+        runs-on: ubuntu-latest
+        name: Scan the application
+        steps:
+          - name: ZAP Scan
+            uses: zaproxy/action-full-scan@v0.5.1
+            with:
+              target: 'https://fernandoarias-a5e58b9f2634.herokuapp.com/'
+            continue-on-error: true
+          - uses: actions/upload-artifact@v2
+            with: 
+              name: owasp-zap
+              path: report_*
